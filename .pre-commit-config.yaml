@@ -1,0 +1,37 @@
+fail_fast: true
+default_install_hook_types: [pre-commit, commit-msg]
+repos:
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.4.1
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+  - repo: local
+    hooks:
+      - id: format
+        name: format
+        entry: make format
+        language: system
+        stages: [pre-commit]
+  - repo: local
+    hooks:
+      - id: lint
+        name: lint
+        entry: make lint
+        language: system
+        stages: [pre-commit]
+  - repo: local
+    hooks:
+      - id: type
+        name: type
+        entry: make type
+        language: system
+        stages: [pre-commit]
+  - repo: local
+    hooks:
+      - id: test
+        name: test
+        entry: make test
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
