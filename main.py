@@ -17,3 +17,4 @@
 #     result = classifier.get_response_and_scores(pdf_file_path)
 
 #     print("Classification Result:", result)
+# asd
