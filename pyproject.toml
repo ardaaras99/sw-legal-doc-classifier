@@ -1,6 +1,6 @@
 [project]
 name = "sw-legal-doc-classifier"
-version = "0.1.1"
+version = "0.4.0"
 description = "This is my Python project."
 authors = [
     { name = "Arda Can Aras", email = "ardaaras99@gmail.com" },
@@ -16,8 +16,11 @@ readme = "README.md"
 
 dependencies = [
     "agno>=1.5.6",
+    "dotenv>=0.9.9",
     "langchain-community>=0.3.24",
+    "openai>=1.83.0",
     "pydantic>=2.11.5",
+    "pypdf>=5.6.0",
     "python-dotenv>=1.1.0",
 ]
 
@@ -72,7 +75,7 @@ disallow_untyped_defs = true
 [tool.commitizen]
 name = "cz_conventional_commits"
 tag_format = "$version"
-version = "0.1.1"
+version = "0.4.0"
 version_provider = "uv"
 version_files = [
     "pyproject.toml:version",

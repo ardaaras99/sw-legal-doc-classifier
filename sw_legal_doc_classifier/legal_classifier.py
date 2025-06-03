@@ -1,12 +1,8 @@
-import os
 import time
 from typing import Any
 
 from agno.agent import Agent, RunResponse
-from agno.memory.v2.db.sqlite import SqliteMemoryDb
-from agno.memory.v2.memory import Memory
 from agno.models.openai import OpenAIChat
-from agno.storage.sqlite import SqliteStorage
 from langchain_community.document_loaders import PyPDFLoader
 from pydantic import BaseModel, Field
 
@@ -34,43 +30,49 @@ class LegalClassificationOutput(BaseModel):
     )
 
 
+class LegalClass(BaseModel):
+    id: str
+    title_tr: str
+
+
 class LegalDocumentClassifier:
     """A class for classifying Turkish legal documents into predefined categories."""
 
     # Default legal classes in Turkish
     DEFAULT_LEGAL_CLASSES = [
-        {"id": "hizmet_sozlesmesi", "title_tr": "Hizmet Sözleşmesi"},
-        {"id": "is_sozlesmesi", "title_tr": "İş Sözleşmesi"},
-        {"id": "sigorta_sozlesmesi", "title_tr": "Sigorta Sözleşmesi"},
-        {"id": "kira_sozlesmesi", "title_tr": "Kira Sözleşmesi"},
-        {"id": "gizlilik_sozlesmesi", "title_tr": "Gizlilik Sözleşmesi (NDA)"},
-        {"id": "lisans_sozlesmesi", "title_tr": "Lisans Sözleşmesi"},
-        {"id": "franchise_sozlesmesi", "title_tr": "Franchise Sözleşmesi"},
-        {"id": "distrbutorluk_sozlesmesi", "title_tr": "Distribütörlük Sözleşmesi"},
-        {"id": "ortaklik_sozlesmesi", "title_tr": "Ortaklık Sözleşmesi"},
-        {"id": "teminat_sozlesmesi", "title_tr": "Teminat Sözleşmesi"},
-        {"id": "taseronluk_sozlesmesi", "title_tr": "Taşeronluk Sözleşmesi"},
-        {"id": "ipotek_sozlesmesi", "title_tr": "İpotek Sözleşmesi"},
-        {"id": "tedarik_sozlesmesi", "title_tr": "Tedarik Sözleşmesi"},
-        {"id": "yatirim_sozlesmesi", "title_tr": "Yatırım Sözleşmesi"},
-        {"id": "danismanlik_sozlesmesi", "title_tr": "Danışmanlık Sözleşmesi"},
-        {"id": "alim_satim_sozlesmesi", "title_tr": "Alım Satım Sözleşmesi"},
-        {"id": "acentelik_sozlesmesi", "title_tr": "Acentelik Sözleşmesi"},
-        {"id": "kefalet_sozlesmesi", "title_tr": "Kefalet Sözleşmesi"},
-        {"id": "gayrimenkul_satis_sozlesmesi", "title_tr": "Gayrimenkul Satış Sözleşmesi"},
-        {"id": "teknoloji_transfer_sozlesmesi", "title_tr": "Teknoloji Transfer Sözleşmesi"},
+        LegalClass(id="hizmet_sozlesmesi", title_tr="Hizmet Sözleşmesi"),
+        LegalClass(id="is_sozlesmesi", title_tr="İş Sözleşmesi"),
+        LegalClass(id="sigorta_sozlesmesi", title_tr="Sigorta Sözleşmesi"),
+        LegalClass(id="kira_sozlesmesi", title_tr="Kira Sözleşmesi"),
+        LegalClass(id="gizlilik_sozlesmesi", title_tr="Gizlilik Sözleşmesi (NDA)"),
+        LegalClass(id="lisans_sozlesmesi", title_tr="Lisans Sözleşmesi"),
+        LegalClass(id="franchise_sozlesmesi", title_tr="Franchise Sözleşmesi"),
+        LegalClass(id="distrbutorluk_sozlesmesi", title_tr="Distribütörlük Sözleşmesi"),
+        LegalClass(id="ortaklik_sozlesmesi", title_tr="Ortaklık Sözleşmesi"),
+        LegalClass(id="teminat_sozlesmesi", title_tr="Teminat Sözleşmesi"),
+        LegalClass(id="taseronluk_sozlesmesi", title_tr="Taşeronluk Sözleşmesi"),
+        LegalClass(id="ipotek_sozlesmesi", title_tr="İpotek Sözleşmesi"),
+        LegalClass(id="tedarik_sozlesmesi", title_tr="Tedarik Sözleşmesi"),
+        LegalClass(id="yatirim_sozlesmesi", title_tr="Yatırım Sözleşmesi"),
+        LegalClass(id="danismanlik_sozlesmesi", title_tr="Danışmanlık Sözleşmesi"),
+        LegalClass(id="alim_satim_sozlesmesi", title_tr="Alım Satım Sözleşmesi"),
+        LegalClass(id="acentelik_sozlesmesi", title_tr="Acentelik Sözleşmesi"),
+        LegalClass(id="kefalet_sozlesmesi", title_tr="Kefalet Sözleşmesi"),
+        LegalClass(id="gayrimenkul_satis_sozlesmesi", title_tr="Gayrimenkul Satış Sözleşmesi"),
+        LegalClass(id="teknoloji_transfer_sozlesmesi", title_tr="Teknoloji Transfer Sözleşmesi"),
     ]
 
     def __init__(
         self,
         model_id: str = "gpt-4.1-nano",
         user_id: str = "default_user",
-        db_file: str = "memory3.db",
-        legal_classes: list[dict[str, str]] | None = None,
+        legal_classes: list[LegalClass] | None = None,
         max_chars_for_prompt: int = 4000,
-        enable_memory: bool = True,
-        enable_storage: bool = True,
         debug_mode: bool = True,
+        agent_description: str | None = None,
+        agent_instructions_template: str | None = None,
+        agent_markdown: bool = True,
+        # Add more config options as needed
     ):
         """
         Initialize the legal document classifier.
@@ -78,57 +80,50 @@ class LegalDocumentClassifier:
         Args:
             model_id: The ID of the OpenAI model to use
             user_id: The ID of the user making the request
-            db_file: The path to the SQLite database file
             legal_classes: A list of dictionaries containing legal classes
             max_chars_for_prompt: Maximum number of characters to include in the prompt
-            enable_memory: Whether to enable memory functionality
-            enable_storage: Whether to enable storage functionality
             debug_mode: Whether to enable debug mode
         """
 
         # Set instance variables
         self.model_id = model_id
         self.user_id = user_id
-        self.db_file = db_file
         self.legal_classes = legal_classes or self.DEFAULT_LEGAL_CLASSES
         self.max_chars_for_prompt = max_chars_for_prompt
-        self.enable_memory = enable_memory
-        self.enable_storage = enable_storage
         self.debug_mode = debug_mode
-
-        # Set up memory and storage if enabled
-        self.memory = None
-        self.storage = None
-
-        if self.enable_memory:
-            self._setup_memory()
-
-        if self.enable_storage:
-            self._setup_storage()
-
-        # Ensure the database directory exists
-        os.makedirs(os.path.dirname(db_file), exist_ok=True)
-
-        # Prepare the agent description
-        self.agent_description = (
+        self.agent_description = agent_description or (
             "You are an expert AI assistant specializing in Turkish legal document classification. "
             "Your task is to analyze a given legal document text and classify it according to a "
             "predefined list of Turkish legal contract types (Sözleşme Türleri)."
         )
+        self.agent_instructions_template = (
+            agent_instructions_template
+            or """
+            Please analyze the following legal document content.
+            Based on the content, particularly the purpose of the document, obligations of the parties, specific clauses, subject matter, and legal terminology related to contracts:
 
-        # Prepare the class list string for the prompt
-        self.class_list_str = "\n".join(
-            [f"- ID: {lc['id']}, Title (TR): {lc['title_tr']}" for lc in self.legal_classes]
+            1. For EACH of the {num_classes} legal classes provided below, assign a relevance score from 0.0 (not relevant at all) to 1.0 (highly relevant).
+            A document might be relevant to multiple classes to some degree, but focus on the primary nature of the document.
+
+            2. Identify the single BEST and MOST SPECIFIC legal class that this document belongs to or is primarily concerned with.
+            This should be one of the classes from the provided list.
+
+            3. Extract key legal terms and phrases from the document that support your classification.
+
+            Here are the Turkish Legal Classes:
+            --- START LEGAL CLASSES ---
+            {class_list_str}
+            --- END LEGAL CLASSES ---
+
+            Here is the document text to analyze:
+            --- START DOCUMENT TEXT ---
+            {prompt_document_text}
+            --- END DOCUMENT TEXT ---
+
+            Provide your output in the structured format requested.
+        """
         )
-
-    def _setup_memory(self):
-        """Set up the memory database."""
-        self.memory_db = SqliteMemoryDb(table_name="memory", db_file=self.db_file)
-        self.memory = Memory(db=self.memory_db)
-
-    def _setup_storage(self):
-        """Set up the storage database."""
-        self.storage = SqliteStorage(table_name="agent_sessions", db_file=self.db_file)
+        self.agent_markdown = agent_markdown
 
     def extract_text_from_pdf(self, pdf_path: str) -> str | None:
         """
@@ -156,78 +151,31 @@ class LegalDocumentClassifier:
             return None
 
     def _create_agent(self, document_text: str) -> Agent:
-        """
-        Create and configure the agent with the given document text.
-
-        Args:
-            document_text: The text content of the document to classify
-
-        Returns:
-            The configured agent
-        """
-        # Truncate the document text if necessary
         prompt_document_text = document_text[: self.max_chars_for_prompt]
         if len(document_text) > self.max_chars_for_prompt:
             print(
                 f"Warning: Document text truncated to {self.max_chars_for_prompt} characters for the prompt."
             )
 
-        # Prepare the agent instructions
+        class_list_str = "\n".join(
+            [f"- ID: {lc.id}, Title (TR): {lc.title_tr}" for lc in self.legal_classes]
+        )
         agent_instructions = [
-            f"""
-            Please analyze the following legal document content.
-            Based on the content, particularly the purpose of the document, obligations of the parties, specific clauses, subject matter, and legal terminology related to contracts:
-
-            1. For EACH of the {len(self.legal_classes)} legal classes provided below, assign a relevance score from 0.0 (not relevant at all) to 1.0 (highly relevant).
-            A document might be relevant to multiple classes to some degree, but focus on the primary nature of the document.
-        
-            2. Identify the single BEST and MOST SPECIFIC legal class that this document belongs to or is primarily concerned with.
-            This should be one of the classes from the provided list.
-        
-            3. Extract key legal terms and phrases from the document that support your classification.
-        
-            Here are the Turkish Legal Classes:
-            --- START LEGAL CLASSES ---
-            {self.class_list_str}
-            --- END LEGAL CLASSES ---
-            
-            Here is the document text to analyze:
-            --- START DOCUMENT TEXT ---
-            {prompt_document_text}
-            --- END DOCUMENT TEXT ---
-            
-            Provide your output in the structured format requested.
-        """
+            self.agent_instructions_template.format(
+                num_classes=len(self.legal_classes),
+                class_list_str=class_list_str,
+                prompt_document_text=prompt_document_text,
+            )
         ]
 
-        # Create agent configuration
-        agent_config = {
+        agent_config: dict[str, Any] = {
             "model": OpenAIChat(id=self.model_id),
             "description": self.agent_description,
             "instructions": agent_instructions,
             "response_model": LegalClassificationOutput,
-            "markdown": True,
+            "markdown": self.agent_markdown,
             "debug_mode": self.debug_mode,
         }
-
-        # Add memory and storage if enabled
-        if self.enable_memory:
-            agent_config.update(
-                {
-                    "memory": self.memory,
-                    "enable_agentic_memory": True,
-                    "enable_user_memories": True,
-                }
-            )
-
-        if self.enable_storage:
-            agent_config.update(
-                {
-                    "storage": self.storage,
-                    "add_history_to_messages": True,
-                    "num_history_runs": 3,
-                }
-            )
 
         return Agent(**agent_config)
 
@@ -270,7 +218,7 @@ class LegalDocumentClassifier:
         start_time = time.time()
 
         try:
-            response: RunResponse = agent.run(
+            response: RunResponse = agent.run(  # type: ignore
                 "Classify the provided legal document based on your instructions.",
                 user_id=self.user_id,
             )
@@ -286,13 +234,14 @@ class LegalDocumentClassifier:
                 raise ValueError("No content returned from the agent.")
 
             # Process and return the results
-            results = {
+            results: dict[str, Any] = {
                 "best_class": response_content.best_class_title,
                 "rationale": response_content.rationale,
                 "key_terms": response_content.key_terms,
                 "normalized_scores": self._get_normalized_scores(response),
                 "raw_scores": [
-                    (score.title, score.score, score.rationale) for score in response.content.scores
+                    (score.title, score.score, score.rationale)
+                    for score in response.content.scores  # type: ignore
                 ],
                 "execution_time": elapsed_time,
                 "source_file": source_file,
