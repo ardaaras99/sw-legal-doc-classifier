@@ -16,8 +16,10 @@ readme = "README.md"
 
 dependencies = [
     "agno>=1.5.6",
+    "dotenv>=0.9.9",
     "langchain-community>=0.3.24",
     "pydantic>=2.11.5",
+    "pypdf>=5.6.0",
     "python-dotenv>=1.1.0",
 ]
 
