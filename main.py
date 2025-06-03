@@ -16,7 +16,7 @@ if __name__ == "__main__":
     classifier = LegalDocumentClassifier(
         model_id="gpt-4.1-nano",  # or any other model you prefer
         user_id="user123",
-        legal_classes=None,  # or omit for default
+        legal_classes=None,  # or your custom 20 legal class.You can add above.
         max_chars_for_prompt=3000,
         debug_mode=False,
         agent_description=None,  # or your custom description
