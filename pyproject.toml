@@ -2,9 +2,7 @@
 name = "sw-legal-doc-classifier"
 version = "0.4.0"
 description = "This is my Python project."
-authors = [
-    { name = "Arda Can Aras", email = "ardaaras99@gmail.com" },
-]
+authors = [{ name = "Arda Can Aras", email = "ardaaras99@gmail.com" }]
 requires-python = ">=3.10,<3.13"
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -17,22 +15,21 @@ readme = "README.md"
 dependencies = [
     "agno>=1.5.6",
     "dotenv>=0.9.9",
-    "langchain-community>=0.3.24",
     "openai>=1.83.0",
     "pydantic>=2.11.5",
-    "pypdf>=5.6.0",
     "python-dotenv>=1.1.0",
+    "rich>=14.0.0",
 ]
 
 [dependency-groups]
 dev = [
 
-"ipykernel>=6.29.5",
+    "ipykernel>=6.29.5",
     "ipython>=8.34.0",
     "ipywidgets>=8.1.5",
     "jupyter>=1.1.1",
-"mypy>=1.15.0",
-"pytest-cov>=6.0.0",
+    "mypy>=1.15.0",
+    "pytest-cov>=6.0.0",
     "pytest>=8.3.5",
     "commitizen>=4.4.1",
     "pep8-naming>=0.14.1",
@@ -43,7 +40,7 @@ dev = [
 ]
 
 [tool.ruff]
-line-length = 100
+line-length = 200
 
 [tool.ruff.format]
 # Like Black

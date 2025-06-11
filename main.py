@@ -1,31 +1,58 @@
-from dotenv import load_dotenv
+# %%
 
-from sw_legal_doc_classifier.legal_classifier import LegalClass, LegalDocumentClassifier
+# %%
+import enum
 
-# Load environment variables
-load_dotenv()
+from pydantic import BaseModel, Field
+from rich import print as rprint
 
-if __name__ == "__main__":
-    # You can customize legal classes if you want
-    custom_legal_classes = [
-        LegalClass(id="ozel_sozlesme", title_tr="Özel Sözleşme"),
-        LegalClass(id="hizmet_sozlesmesi", title_tr="Hizmet Sözleşmesi"),
-    ]
+from sw_legal_doc_classifier.legal_classifier import AgentConfig, DocumentClassifier
 
-    # Create a classifier instance with custom configuration
-    classifier = LegalDocumentClassifier(
-        model_id="gpt-4.1-nano",  # or any other model you prefer
-        user_id="user123",
-        legal_classes=None,  # or your custom 20 legal class.You can add above.
-        max_chars_for_prompt=3000,
-        debug_mode=False,
-        agent_description=None,  # or your custom description
-        agent_instructions_template=None,  # or your custom instructions
-        agent_markdown=True,
-    )
+DocumentType: type[enum.StrEnum] = enum.StrEnum(
+    "DocumentType",
+    [
+        "Kira",
+        "Hizmet",
+        "İş",
+        "Sigorta",
+        "Lisans",
+        "Franchise",
+        "Distribütörlük",
+        "Ortaklık",
+        "Teminat",
+        "Taşeronluk",
+        "İpotek",
+        "Tedarik",
+        "Yatırım",
+        "Danışmanlık",
+        "Alım Satım",
+    ],
+)
 
-    # Classify a PDF document
-    pdf_file_path = "/home/faruk18/python-projects/sw-legal-doc-classifier/test.pdf"
-    result = classifier.get_response_and_scores(pdf_file_path)
 
-    print("Classification Result:", result)
+class Trial(BaseModel):
+    document_type: DocumentType
+    score: int = Field(description="describes how confident the model is about the document type", ge=0, le=100)
+    rationale: str = Field(description="sence bu döküman neden senin seçtiğin türe ait")
+
+
+config = AgentConfig(
+    response_model=Trial,
+    # model_id="gpt-4.1-nano",
+    model_id="gpt-4o-mini",
+    max_chars_for_prompt=3000,
+    debug_mode=True,
+    agent_description="Sen bir classification uzmanısın, sana bir dökümanın alabileceği farklı türleri veriyorum, lütfen bunlar arasından en uygun olanı seç ve score ver, Cevaplarının türkçe olması gerekiyor.",
+    agent_instructions_template="Sen bir classification uzmanısın, sana bir dökümanın alabileceği farklı türleri veriyorum, lütfen bunlar arasından en uygun olanı seç ve score ver, Cevaplarının türkçe olması gerekiyor.",
+    agent_markdown=True,
+)
+classifier = DocumentClassifier(agent_config=config)
+
+# Classify a PDF document
+with open("data/trial.txt", encoding="utf-8") as file:
+    document_text = file.read()
+result = classifier.get_response_and_scores(document_text=document_text)
+rprint(result)
+
+
+# %%
